@@ -1,0 +1,10 @@
+{
+    "customer_id":"cust_QxGZYBloDH2iJy",
+    "beneficiary_name":"vikas",
+    "account_number":"1234567890123456",
+    "ifsc_code":"HDFC0001234",
+    "phone":"1234567890",
+    "email": "vikaskuma09@example.com",
+    "max_amount":"20000",
+    "authType":"upi"
+}
