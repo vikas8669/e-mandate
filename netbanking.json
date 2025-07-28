@@ -1,0 +1,10 @@
+{
+  "method": "emandate",
+  "authType": "netbanking",
+  "customer_id": "cust_Qy6MYv4J2K0sh3",
+  "beneficiary_name": "Vikas Kumar",
+  "account_number": "123456789",
+  "ifsc_code": "HDFC0001234",
+  "max_amount": 250000,
+  "receipt": "rcpt_test"
+}

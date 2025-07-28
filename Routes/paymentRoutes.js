@@ -1,11 +1,11 @@
 const express = require("express")
 const router = express.Router()
 
-const {CreateUser, createOrder, createRegistrationLink} = require("../Controllers/subscription")
+const {CreateUser, createOrder, subsequent} = require("../Controllers/subscription")
 
 router.post("/create-user", CreateUser)
 router.post("/create-order", createOrder)
-// router.post("/create-upi", createRegistrationLink)
+router.post("/create-emandate", subsequent)
 
 
 
