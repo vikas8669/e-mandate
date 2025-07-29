@@ -2,9 +2,11 @@ const instance = require("../Config/Razorpay")
 const User = require("../Models/User")
 const Order = require("../Models/Order")
 const Emandate = require("../Models/subsequent")
+
 const Token = require("../Models/Token")
 const crypto = require("crypto")
 require("dotenv").config()
+
 
 exports.CreateUser = async (req, res) => {
 
@@ -336,96 +338,6 @@ exports.subsequent = async (req, res) => {
     }
 }
 
-
-
-
-
-// exports.subsequent = async (req, res) => {
-
-//     try {
-
-//         let { amount, currency, notes, customer_id, contact, email, token_id, order_id } = req.body
-
-//         if (!amount || !currency || !order_id || (!token_id && !customer_id)) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: "Missing required fields: amount, currency, receipt, and token_id or customer_id"
-//             })
-//         }
-
-//         if (typeof notes === "string") {
-//             try {
-//                 notes = JSON.parse(notes)
-//             } catch (err) {
-//                 notes = { purpose: "Monthly EMI Auto-Debit" }
-//             }
-//         } else if (typeof notes !== "object" || notes === null) {
-//             notes = { purpose: "Monthly EMI Auto-Debit" }
-//         }
-
-//         let tokenToUse = token_id
-//         console.log(tokenToUse)
-//         if (!tokenToUse && customer_id) {
-//             const token = await fetchTokenByCustomer(customer_id)
-//             if (token && token.status === "active") {
-//                 tokenToUse = token.id
-//             } else {
-//                 return res.status(400).json({
-//                     success: false,
-//                     message: "Token not found or not active"
-//                 })
-//             }
-//         }
-
-//         console.log("🔍 Sending to Razorpay:", {
-//             token: tokenToUse,
-//             customer_id,
-//             amount: amount * 100,
-//             currency,
-//             // receipt,
-//             notes
-//         })
-
-//         const payment = await instance.payments.createRecurringPayment({
-//             email,
-//             contact,
-//             amount: amount * 100,
-//             currency,
-//             customer_id,
-//             token: tokenToUse,
-//             recurring: "1",
-//             order_id,
-//             description: "Creating recurring payment for customer",
-//             notes
-//         })
-
-//         const saved = await Emandate.create({
-//             amount,
-//             currency,
-//             customer_id,
-//             token_id: tokenToUse,
-//             // receipt,
-//             razorpay_payment_id: payment.id,
-//             status: "initiated",
-//             notes
-//         })
-
-//         return res.status(201).json({
-//             success: true,
-//             message: "Recurring payment initiated",
-//             payment
-//         })
-
-//     } catch (err) {
-//         console.error("🔴 Razorpay error full:", err)
-
-//         return res.status(500).json({
-//             success: false,
-//             message: err?.response?.data?.error?.description || err.message,
-//             details: err?.response?.data || null
-//         })
-//     }
-// }
 
 exports.razorpayWebhook = async (req, res) => {
 
