@@ -8,14 +8,13 @@ const orderSchema = new mongoose.Schema({
     },
     tokenId: {
         type: String,
-        required: true,
-        unique: true
+        // required: true,
+        // unique: true
     },
     authType: {
         type: String,
         enum: ["netbanking", "debitcard", "upi"],
-        required: true,
-        
+        required: true
     },
     bankAccount: {
         beneficiary_name: String,
@@ -27,7 +26,7 @@ const orderSchema = new mongoose.Schema({
         ifsc_code: String
     },
     maxAmount: {
-        type: Number, 
+        type: Number,
         required: true
     },
     expireAt: {
@@ -46,7 +45,13 @@ const orderSchema = new mongoose.Schema({
     notes: {
         type: Map,
         of: String
+    },
+    receipt: {
+        type: String
+    },
+    upiRegistrationLink: {
+        type: String
     }
-})
+});
 
 module.exports = mongoose.model("Order", orderSchema);

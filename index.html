@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Authorize Mandate</title>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+  <button id="payBtn">Authorize Mandate</button>
+
+  <script>
+    // require("")
+    const options = {
+      key: "rzp_test_1tY6XDkKl4QsfO", 
+      order_id: "order_QynWJ3VblWSq7u", 
+      name: "Authorize EMI Auto-Debit",
+      description: "EMI Auto Authorization",
+      recurring: 1,
+      customer_id: "cust_QynVZSnuUojyw9", 
+
+      handler: function (response) {
+        alert("Payment ID: " + response.razorpay_payment_id);
+      }
+    };
+    document.getElementById("payBtn").onclick = function () {
+      const rzp = new Razorpay(options);
+      rzp.open();
+    };
+  </script>
+</body>
+</html>
