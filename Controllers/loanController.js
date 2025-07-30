@@ -1,6 +1,8 @@
 const Loan = require("../Models/instantLoan")
 const User = require("../Models/User")
 
+
+
 const generateEMISchedule = (startDate, monthlyEMI, tenureMonths) => {
     
     const schedule = []
