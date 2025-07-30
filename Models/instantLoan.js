@@ -30,8 +30,8 @@ const instantLoanSchema = new mongoose.Schema({
     isEmandateActive: { type: Boolean, default: false },
     mandateStatus: { type: String, default: "inactive" },
 
-    razorpayCustomerId: { type: String },          // 👈 New: Link to Razorpay customer
-    tokenId: { type: String },                     // 👈 New: Token for recurring payment
+    razorpayCustomerId: { type: String },          
+    tokenId: { type: String },                     
 }, { timestamps: true });
 
 module.exports = mongoose.model("InstantLoan", instantLoanSchema);
