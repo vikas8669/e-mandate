@@ -2,8 +2,8 @@ const instance = require("../Config/Razorpay")
 const User = require("../Models/User")
 const Order = require("../Models/Order")
 const Emandate = require("../Models/subsequent")
-
-const Token = require("../Models/Token")
+const Loan = require("../Models/instantLoan")
+// const Token = require("../Models/Token")
 const crypto = require("crypto")
 require("dotenv").config()
 
@@ -31,10 +31,15 @@ exports.CreateUser = async (req, res) => {
             razorpayCustomerId: razorpayCustomer.id
         })
 
-        res.status(201).json({ success: true, newUser })
+        res.status(201).json({
+            success: true, newUser
+        })
+
     } catch (err) {
         console.log(err)
-        res.status(500).json({ success: false, message: err.message })
+        res.status(500).json({
+            success: false, message: err.message
+        })
     }
 }
 
@@ -54,6 +59,7 @@ exports.createOrder = async (req, res) => {
             authType,
             phone,
             email
+
         } = req.body
 
         if (!method || !customer_id || !max_amount) {
@@ -96,6 +102,7 @@ exports.createOrder = async (req, res) => {
                 expire_by: expire_at
             })
 
+            console.log("orderId here", registrationLink.order_id)
             const newOrder = new Order({
                 razorpayCustomerId: customer_id,
                 method: "upi",
@@ -107,7 +114,8 @@ exports.createOrder = async (req, res) => {
                     duration: "12 months"
                 },
                 upiRegistrationLink: registrationLink.short_url || registrationLink.url,
-                receipt
+                receipt,
+                order_id: registrationLink.order_id || null
             })
 
             await newOrder.save()
@@ -155,23 +163,6 @@ exports.createOrder = async (req, res) => {
             }
         })
 
-        // const fetchTokenByCustomer = async (customer_id) => {
-
-        //     try {
-        //         const tokens = await instance.customers.fetchTokens(customer_id)
-        //         return tokens.items.length ? tokens.items[0] : null
-        //     } catch (err) {
-        //         console.error("Token fetch error:", err.message)
-        //         return null
-        //     }
-        // }
-
-        // const token = await fetchTokenByCustomer(customer_id)
-        // console.log("Token here: ", token)
-        // if (!token) {
-        //     return res.status(400).json({ success: false, message: "Token not yet available" })
-        // }
-
         const newOrder = new Order({
             razorpayCustomerId: customer_id,
             method,
@@ -205,77 +196,100 @@ exports.createOrder = async (req, res) => {
     }
 }
 
-exports.fetchToken = async (req, res) => {
-
+exports.fetchPaymentByOrderId = async (req, res) => {
     try {
-        const { customer_id } = req.params
+        const { order_id } = req.params;
 
-        if (!customer_id) {
-            return res.status(400).json({ success: false, message: "Customer ID is required" })
+        if (!order_id) {
+            return res.status(400).json({ message: "Missing order_id" });
         }
 
-        const tokens = await instance.customers.fetchTokens(customer_id)
+        // Fetch payments from Razorpay using the order ID
+        const payments = await instance.payments.all({ order_id });
 
-        if (!tokens.items || tokens.items.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "No token found yet for this customer"
-            })
+        if (payments.count === 0 || payments.items.length === 0) {
+            return res.status(404).json({ message: "No payment found for this order" });
         }
 
-        const token = tokens.items[0]
-        console.log("Token fetched:", token.id)
+        const payment = payments.items[0]; // Use the first payment (usually only one per eMandate order)
 
+        console.log("✅ Payment Fetched:", payment.id);
+
+        // Update the Order in DB
         const updatedOrder = await Order.findOneAndUpdate(
+            { order_id }, // match Razorpay order_id in DB
             {
-                razorpayCustomerId: customer_id,
-                tokenId: null
+                razorpayPaymentId: payment.id,
+                tokenId: payment.token_id || null,
+                status: payment.status || "active"
             },
-            {
-                tokenId: token.id,
-                status: "active"
-            },
-            {
-                new: true
-            }
-        )
+            { new: true } // return the updated document
+        );
 
         if (!updatedOrder) {
-            return res.status(404).json({
-                success: false,
-                message: "No matching order found to update"
-            })
+            return res.status(404).json({ message: "Order not found in DB" });
         }
 
         res.status(200).json({
             success: true,
-            message: "Token fetched and order updated",
-            tokenId: token.id,
-            order: updatedOrder
-        })
+            message: "Payment fetched and order updated successfully",
+            payment_id: payment.id,
+            token_id: payment.token_id || null,
+            status: payment.status,
+            updatedOrder
+        });
 
     } catch (error) {
-        console.error("Fetch Token Error:", error.message)
-        res.status(500).json({
-            success: false,
-            message: error.message
-        })
+        console.error("❌ Error fetching/storing payment:", error);
+        res.status(500).json({ success: false, message: error.message });
     }
-}
-
+};
 
 exports.subsequent = async (req, res) => {
 
     try {
 
-        let { amount, currency, customer_id, contact, email, token_id } = req.body
+        let { userId, loanId, currency, customer_id, contact, email, token_id } = req.body
 
-        if (!amount || !currency || (!token_id && !customer_id)) {
+        if ( !currency || (!token_id && !customer_id)) {
             return res.status(400).json({
                 success: false,
                 message: "Missing required fields: amount, currency, and token_id or customer_id"
             })
         }
+
+        const loan = await Loan.findById(loanId)
+        if (!loan) {
+            return res.status(404).json({
+                success: false,
+                message: "Loan not found"
+            })
+        }
+        // if (loanId) {
+        //     if (loan) {
+        //         const nextEmi = loan.emiDetails.find((emi) => emi.status === "pending");
+        //         if (nextEmi) {
+        //             nextEmi.status = "in-progress";
+        //             nextEmi.razorpayPaymentId = payment.id;
+        //             nextEmi.razorpayOrderId = order.id;
+        //             await loan.save();
+        //         }
+        //     }
+        // }
+
+
+        const nextEmi = loan.emiDetails.find(emi => emi.status === "pending");
+        if (!nextEmi) {
+            return res.status(400).json({
+                success: false,
+                message: "No pending EMI found"
+            });
+        }
+
+        const amount = nextEmi.totalAmount
+
+
+
 
         let tokenToUse = token_id
         console.log(tokenToUse)
@@ -311,15 +325,31 @@ exports.subsequent = async (req, res) => {
             description: "Auto-debit EMI"
         })
 
-        const saved = await Emandate.create({
+        await Emandate.create({
+            userId,
+            loanId,
             amount,
-            currency,
-            customer_id,
             token_id: tokenToUse,
-            razorpay_payment_id: payment.id,
-            order_id: order.id,
-            status: "initiated"
+            customer_id,
+            currency,
+            payment_capture: true,
+            razorpay_order_id: order.id,
+            status: "in-progress",
+            notification: {
+                token_id: tokenToUse,
+                payment_after: 30
+            },
+            notes: {
+                customer_id,
+                razorpay_payment_id: payment.id
+            }
         })
+
+        nextEmi.status = "in-progress";
+        nextEmi.razorpayPaymentId = payment.id;
+        nextEmi.razorpayOrderId = order.id;
+        await loan.save()
+
 
         return res.status(201).json({
             success: true,
@@ -338,47 +368,45 @@ exports.subsequent = async (req, res) => {
     }
 }
 
+// exports.razorpayWebhook = async (req, res) => {
 
-exports.razorpayWebhook = async (req, res) => {
+//     try {
 
-    try {
+//         const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET
+//         const crypto = require("crypto")
+//         const shasum = crypto.createHmac("sha256", webhookSecret)
+//         shasum.update(JSON.stringify(req.body))
+//         const digest = shasum.digest("hex")
 
-        const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET
-        const crypto = require("crypto")
-        const shasum = crypto.createHmac("sha256", webhookSecret)
-        shasum.update(JSON.stringify(req.body))
-        const digest = shasum.digest("hex")
+//         const signature = req.headers["x-razorpay-signature"]
+//         if (digest !== signature) {
+//             return res.status(400).json({ message: "Invalid webhook signature" })
+//         }
 
-        const signature = req.headers["x-razorpay-signature"]
-        if (digest !== signature) {
-            return res.status(400).json({ message: "Invalid webhook signature" })
-        }
+//         const event = req.body.event
+//         const payload = req.body.payload
 
-        const event = req.body.event
-        const payload = req.body.payload
+//         if (event === "token.created") {
+//             const tokenData = payload.token.entity
+//             console.log("Token Created:", tokenData)
 
-        if (event === "token.created") {
-            const tokenData = payload.token.entity
-            console.log("Token Created:", tokenData)
+//             await Token.create({
+//                 tokenId: tokenData.id,
+//                 customerId: tokenData.customer_id,
+//                 method: tokenData.method,
+//                 bank: tokenData.bank,
+//                 status: tokenData.status,
+//                 recurring: tokenData.recurring,
+//                 createdAt: new Date(tokenData.created_at * 1000),
+//                 expiredAt: new Date(tokenData.expire_at * 1000)
+//             })
 
-            await Token.create({
-                tokenId: tokenData.id,
-                customerId: tokenData.customer_id,
-                method: tokenData.method,
-                bank: tokenData.bank,
-                status: tokenData.status,
-                recurring: tokenData.recurring,
-                createdAt: new Date(tokenData.created_at * 1000),
-                expiredAt: new Date(tokenData.expire_at * 1000)
-            })
+//             return res.status(200).json({ success: true, message: "Token saved" })
+//         }
 
-            return res.status(200).json({ success: true, message: "Token saved" })
-        }
-
-        res.status(200).json({ success: true, message: "Webhook received" })
-    } catch (err) {
-        console.error("Webhook error:", err.message)
-        res.status(500).json({ message: err.message })
-    }
-}
-
+//         res.status(200).json({ success: true, message: "Webhook received" })
+//     } catch (err) {
+//         console.error("Webhook error:", err.message)
+//         res.status(500).json({ message: err.message })
+//     }
+// }

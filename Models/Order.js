@@ -9,7 +9,8 @@ const orderSchema = new mongoose.Schema({
     tokenId: {
         type: String,
         // required: true,
-        // unique: true
+        unique: true,
+        sparse: true
     },
     authType: {
         type: String,
@@ -51,7 +52,13 @@ const orderSchema = new mongoose.Schema({
     },
     upiRegistrationLink: {
         type: String
-    }
+    },
+    order_id: { type: String }, 
+    razorpayPaymentId: {
+  type: String,
+  default: null
+}
+
 });
 
 module.exports = mongoose.model("Order", orderSchema);

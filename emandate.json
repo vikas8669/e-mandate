@@ -1,0 +1,20 @@
+{
+  "amount": 2500,
+  "currency": "INR",
+  "customer_id": "cust_QzA2VsrVP7zQ8a",
+  "contact": "9914089806",
+  "email": "vikayadav866@gmail.com.com",
+  "token_id": "token_QzBiRdxecMB5xd" 
+}
+
+//  repsonse
+
+// {
+//     "success": true,
+//     "message": "Recurring payment initiated",
+//     "payment": {
+//         "razorpay_payment_id": "pay_QzC47IY7zAKISX",
+//         "razorpay_order_id": "order_QzC46h7b7I03zY",
+//         "razorpay_signature": "e275272c9f76b0aa5b6218fb5c760152632dd5788a13a1293ad8ae132e2c4f28"
+//     }
+// }
