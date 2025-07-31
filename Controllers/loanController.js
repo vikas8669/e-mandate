@@ -1,6 +1,6 @@
 const Loan = require("../Models/instantLoan")
 const User = require("../Models/User")
-
+const {sendExpoNotification } = require("../utils/sendPushNotification")
 
 
 const generateEMISchedule = (startDate, monthlyEMI, tenureMonths) => {
@@ -24,7 +24,9 @@ const generateEMISchedule = (startDate, monthlyEMI, tenureMonths) => {
 
 exports.createLoan = async (req, res) => {
     try {
+        
         const {
+                
             userId,
             principal,
             tenureMonths,
@@ -56,6 +58,14 @@ exports.createLoan = async (req, res) => {
             tokenId
         })
 
+        if(user.pushToken) {
+            await sendExpoNotification (
+                user._id,
+                user.pushToken,
+                "Loan Created Successfully",
+                `Your loan of ₹${principal} has been created. First EMI on ${new Date(startDate).toDateString()}.`,
+            )
+        }
         res.status(201).json({ success: true, loan })
 
     } catch (err) {

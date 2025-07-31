@@ -29,7 +29,7 @@ const EmandateSchema = new mongoose.Schema({
   },
 
   razorpay_payment_id: String,
-  order_id: {
+  razorpay_order_id: {
     type: String,
     unique: true
   },

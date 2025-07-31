@@ -3,10 +3,9 @@ const User = require("../Models/User")
 const Order = require("../Models/Order")
 const Emandate = require("../Models/subsequent")
 const Loan = require("../Models/instantLoan")
-// const Token = require("../Models/Token")
-const crypto = require("crypto")
+// const crypto = require("crypto")
 require("dotenv").config()
-
+const {sendExpoNotification } = require("../utils/sendPushNotification")
 
 exports.CreateUser = async (req, res) => {
 
@@ -204,26 +203,24 @@ exports.fetchPaymentByOrderId = async (req, res) => {
             return res.status(400).json({ message: "Missing order_id" });
         }
 
-        // Fetch payments from Razorpay using the order ID
         const payments = await instance.payments.all({ order_id });
 
         if (payments.count === 0 || payments.items.length === 0) {
             return res.status(404).json({ message: "No payment found for this order" });
         }
 
-        const payment = payments.items[0]; // Use the first payment (usually only one per eMandate order)
+        const payment = payments.items[0]; 
 
         console.log("✅ Payment Fetched:", payment.id);
 
-        // Update the Order in DB
         const updatedOrder = await Order.findOneAndUpdate(
-            { order_id }, // match Razorpay order_id in DB
+            { order_id }, 
             {
                 razorpayPaymentId: payment.id,
                 tokenId: payment.token_id || null,
                 status: payment.status || "active"
             },
-            { new: true } // return the updated document
+            { new: true } 
         );
 
         if (!updatedOrder) {
@@ -240,10 +237,10 @@ exports.fetchPaymentByOrderId = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("❌ Error fetching/storing payment:", error);
+        console.error("Error fetching/storing payment:", error);
         res.status(500).json({ success: false, message: error.message });
     }
-};
+}
 
 exports.subsequent = async (req, res) => {
 
@@ -333,7 +330,8 @@ exports.subsequent = async (req, res) => {
             customer_id,
             currency,
             payment_capture: true,
-            razorpay_order_id: order.id,
+            razorpay_order_id: order.id, 
+            razorpay_payment_id: payment.id,
             status: "in-progress",
             notification: {
                 token_id: tokenToUse,
@@ -350,6 +348,21 @@ exports.subsequent = async (req, res) => {
         nextEmi.razorpayOrderId = order.id;
         await loan.save()
 
+        const user = await User.findById(userId);
+        if (user && user.pushToken) {
+            await sendExpoNotification(
+                user._id,
+                user.pushToken,
+                "EMI Payment Initiated",
+                `Your EMI of ₹${amount} has been initiated successfully. Payment ID: ${payment.id}`,
+                {
+                    type: "emi_initiated",
+                    loanId: loan._id,
+                    emiAmount: amount,
+                    paymentId: payment.id
+                }
+            );
+        }
 
         return res.status(201).json({
             success: true,
