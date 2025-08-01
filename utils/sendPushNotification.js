@@ -37,3 +37,6 @@ const sendExpoNotification = async(pushToken, title, body, data ) => {
 }
 
 module.exports = sendExpoNotification
+
+
+

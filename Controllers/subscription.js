@@ -66,7 +66,7 @@ exports.createOrder = async (req, res) => {
                 message: "Missing required fields"
             })
         }
-
+        
         const expire_at = Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60
 
         if (method === "upi") {
@@ -211,7 +211,7 @@ exports.fetchPaymentByOrderId = async (req, res) => {
 
         const payment = payments.items[0]; 
 
-        console.log("✅ Payment Fetched:", payment.id);
+        // console.log("✅ Payment Fetched:", payment.id);
 
         const updatedOrder = await Order.findOneAndUpdate(
             { order_id }, 

@@ -1,13 +1,14 @@
 const mongoose = require("mongoose");
 
 const EmandateSchema = new mongoose.Schema({
+
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User", 
+    ref: "User",
   },
   loanId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "InstantLoan", 
+    ref: "InstantLoan",
   },
 
   amount: {

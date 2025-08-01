@@ -23,6 +23,7 @@ const generateEMISchedule = (startDate, monthlyEMI, tenureMonths) => {
 }
 
 exports.createLoan = async (req, res) => {
+    
     try {
         
         const {

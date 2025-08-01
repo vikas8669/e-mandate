@@ -4,6 +4,7 @@ const dbConnect = require("./Config/db")
 
 const createSubscription = require("./Routes/paymentRoutes")
 const createLoan = require("./Routes/createLoan")
+const fetchAllCustomer = require("./Routes/fetchCutomers")
 require("dotenv").config()
 app.use(express.json())
 
@@ -14,6 +15,7 @@ const PORT = process.env.PORT || 3000
 
 app.use("/api",createSubscription)
 app.use("/api", createLoan)
+app.use("/api",fetchAllCustomer)
 
 
 
